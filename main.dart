@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -35,6 +36,9 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  final GlobalKey<FormState> _keyForm = GlobalKey<FormState>();
+  String numberOfQuestions = "";
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,22 +50,68 @@ class _MainScreenState extends State<MainScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Center(
-            child: Text('Welcome ${widget.username}'),
-          ),
+              child: Column(
+            children: [
+              Text(
+                'Welcome ${widget.username}!',
+                style: const TextStyle(fontSize: 30),
+              ),
+              const SizedBox(
+                height: 30,
+              ),
+              const Text(
+                'Select the number of questions for your quiz.',
+                style: TextStyle(
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          )),
           const SizedBox(height: 30),
-          Center(
-            child: ElevatedButton(
-              child: const Text('Start Quiz'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          QuizScreen(widget.username, widget.pin)),
-                );
-              },
-            ),
-          ),
+          Container(
+              padding: const EdgeInsets.fromLTRB(50.0, 10, 50, 10),
+              child: Column(
+                children: [
+                  Form(
+                    key: _keyForm,
+                    child: TextFormField(
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (String? inValue) {
+                          if (int.tryParse(inValue!) == null) {
+                            return "Please enter a valid number";
+                          }
+
+                          if (int.parse(inValue) < 1 ||
+                              int.parse(inValue) > 136) {
+                            return "Please select between 1-136";
+                          }
+
+                          return null;
+                        },
+                        onSaved: (String? inValue) {
+                          numberOfQuestions = inValue!;
+                        },
+                        decoration: const InputDecoration(labelText: "Answer")),
+                  ),
+                  const SizedBox(
+                    height: 30,
+                  ),
+                  ElevatedButton(
+                    child: const Text('Start Quiz'),
+                    onPressed: () {
+                      if (_keyForm.currentState!.validate()) {
+                        _keyForm.currentState?.save();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => QuizScreen(widget.username,
+                                  widget.pin, numberOfQuestions)),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              )),
         ],
       ),
     );
@@ -71,8 +121,10 @@ class _MainScreenState extends State<MainScreen> {
 class QuizScreen extends StatefulWidget {
   final String username;
   final String pin;
+  final String numberOfQuestions;
 
-  const QuizScreen(this.username, this.pin, {super.key});
+  const QuizScreen(this.username, this.pin, this.numberOfQuestions,
+      {super.key});
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -80,6 +132,8 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen> {
   late Future<List<Question>> _questions;
+  late List<Question> questions;
+  bool hasBeenSet = false;
   int counter = 0;
 
   @override
@@ -111,11 +165,11 @@ class _QuizScreenState extends State<QuizScreen> {
             ],
             onSelected: (value) {
               if (value == "Submit") {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            const ReviewScreen(title: "Cool")));
+                runApp(MaterialApp(
+                  theme: ThemeData.dark(),
+                  debugShowCheckedModeBanner: false,
+                  home: ReviewScreen(questions, title: "Review"),
+                ));
               } else if (value == "Help") {
                 Navigator.push(
                     context,
@@ -131,9 +185,17 @@ class _QuizScreenState extends State<QuizScreen> {
       body: FutureBuilder<List<Question>>(
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            List<Question>? questions = snapshot.data;
+            if (hasBeenSet != true) {
+              List<Question> temp = snapshot.data!;
+              questions = [];
+
+              for (int i = 0; i < int.parse(widget.numberOfQuestions); i++) {
+                questions.add(temp[Random().nextInt(temp.length)]);
+              }
+              hasBeenSet = true;
+            }
             return ListView.builder(
-                itemCount: questions?.length,
+                itemCount: questions.length,
                 itemBuilder: (_, index) {
                   if (index == 0) {
                     return Column(
@@ -146,7 +208,7 @@ class _QuizScreenState extends State<QuizScreen> {
                               width: 12,
                             ),
                             Text(
-                              "$counter/136",
+                              "$counter/${widget.numberOfQuestions}",
                               style: const TextStyle(
                                   fontSize: 15, fontWeight: FontWeight.bold),
                             ),
@@ -170,10 +232,10 @@ class _QuizScreenState extends State<QuizScreen> {
                         ),
                         ListTile(
                           title: TextButton(
-                            onPressed: questions![index].isAnswered
+                            onPressed: questions[index].isAnswered
                                 ? null
                                 : () async {
-                                    bool refreshed = await Navigator.push(
+                                    bool? refreshed = await Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                           builder: (context) => questions[index]
@@ -191,7 +253,7 @@ class _QuizScreenState extends State<QuizScreen> {
                                                 )),
                                     );
 
-                                    if (refreshed) {
+                                    if (refreshed != null && refreshed) {
                                       setState(() {
                                         counter++;
                                         questions[index].hasBeenAnswered();
@@ -212,7 +274,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   } else {
                     return ListTile(
                       title: TextButton(
-                        onPressed: questions![index].isAnswered
+                        onPressed: questions[index].isAnswered
                             ? null
                             : () async {
                                 bool? refreshed = await Navigator.push(
@@ -392,41 +454,54 @@ class MultipleChoiceQuestionScreen extends StatefulWidget {
 
 class _MultipleChoiceQuestionScreenState
     extends State<MultipleChoiceQuestionScreen> {
-  late Future<List<String>> choices = widget.question.choices;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
           title: Text(widget.title),
         ),
-        body: FutureBuilder(
-          future: choices,
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return ListView.builder(
-                  itemCount: 5,
-                  itemBuilder: (_, index) {
-                    return Column(
-                      children: [
-                        ListTile(
-                          title: TextButton(
-                              onPressed: () {
-                                print('hi');
-                              },
-                              child: Text('$index')),
-                        ),
-                      ],
-                    );
-                  });
-            }
+        body: ListView.builder(
+            itemCount: widget.question.choices.length,
+            itemBuilder: (_, index) {
+              if (index == 0) {
+                return Column(
+                  children: [
+                    Container(
+                        padding: const EdgeInsets.fromLTRB(50.0, 50, 50, 90),
+                        child: Text(
+                          widget.question.stem,
+                          style: const TextStyle(fontSize: 25),
+                          textAlign: TextAlign.center,
+                        )),
+                    ListTile(
+                      title: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              widget.question.userChoice(index + 1);
+                            });
 
-            if (snapshot.hasError || !snapshot.hasData) {
-              return const Center(child: Text('Something went wrong :('));
-            }
-            return const Center(child: CircularProgressIndicator());
-          },
-        ));
+                            Navigator.of(context).pop(true);
+                          },
+                          child: Text('${widget.question.choices[index]}')),
+                    ),
+                  ],
+                );
+              }
+              return Column(
+                children: [
+                  ListTile(
+                    title: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            widget.question.userChoice(index + 1);
+                          });
+                          Navigator.of(context).pop(true);
+                        },
+                        child: Text('${widget.question.choices[index]}')),
+                  ),
+                ],
+              );
+            }));
   }
 }
 
@@ -474,12 +549,11 @@ class _FillInBlankQuestionScreenState extends State<FillInBlankQuestionScreen> {
                         if (inValue!.isEmpty) {
                           return "Please enter an answer";
                         }
-
                         return null;
                       },
                       onSaved: (String? inValue) {
                         setState(() {
-                          widget.question.userChoice(inValue);
+                          widget.question.userChoice(inValue.toString());
                         });
                       },
                       decoration: const InputDecoration(labelText: "Answer")),
@@ -501,14 +575,23 @@ class _FillInBlankQuestionScreenState extends State<FillInBlankQuestionScreen> {
 
 class ReviewScreen extends StatefulWidget {
   final String title;
+  final List<Question> questions;
 
-  const ReviewScreen({required this.title, super.key});
+  const ReviewScreen(this.questions, {required this.title, super.key});
 
   @override
   State<ReviewScreen> createState() => _ReviewScreenState();
 }
 
 class _ReviewScreenState extends State<ReviewScreen> {
+  int counter = 0;
+  String getScore() {
+    for (int i = 0; i < widget.questions.length; i++) {
+      counter += widget.questions[i].getScore();
+    }
+    return "$counter";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -517,7 +600,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
       ),
       body: Center(
         child: ElevatedButton(
-          child: const Text('Hello'),
+          child: Text(getScore()),
           onPressed: () {
             Navigator.of(context).pop(true);
           },
@@ -540,17 +623,23 @@ class _HelpScreenState extends State<HelpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: ElevatedButton(
-          child: const Text('Hello'),
-          onPressed: () {
-            Navigator.of(context).pop(true);
-          },
+        appBar: AppBar(
+          title: Text(widget.title),
         ),
-      ),
-    );
+        body: Center(
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+              Container(
+                  padding: const EdgeInsets.fromLTRB(50.0, 0, 50, 0),
+                  child: const Text(
+                    'Select one of the questions to answer. Once answered, the box on its left'
+                    ' will be checked off and the question will be disabled '
+                    'to open again as it has already been answered. '
+                    'Once done press submit to see review score.',
+                    style: TextStyle(fontSize: 25),
+                  )),
+            ])));
   }
 }

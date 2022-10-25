@@ -14,12 +14,6 @@ class Display {
   }
 
   static void displayFeedback(List<Question> userQuestions) {
-    if (userQuestions.isNotEmpty){
-      int sum = 0;
-      for(Question question in userQuestions){
-        sum += question.score as int;
-      }
-      print('Total score is $sum/${userQuestions.length}');
-    }
+
   }
 }

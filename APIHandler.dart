@@ -22,7 +22,7 @@ abstract class APIHandler {
           if(element['type'].toString() == '1') {
             questions.add(MultipleChoice(element['stem'], element['option'], element['answer']));
           } else if (element['type'].toString() == '2') {
-            questions.add(FillInBlank(element['stem'], element['answer']));
+            questions.add(FillInBlank(element['stem'], element['answer'][0]));
           }
         });
       }
