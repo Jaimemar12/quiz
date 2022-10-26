@@ -5,9 +5,10 @@ abstract class Question {
   dynamic _userChoice;
   late int _range;
   bool _isAnswered = false;
+  String ?picture;
 
 
-  Question(this._stem, this._answer);
+  Question(this._stem, this._answer, {this.picture});
 
   get stem => _stem;
   get choices => _choices;
@@ -17,10 +18,6 @@ abstract class Question {
 
   void userChoice(dynamic value) {
     _userChoice = value;
-  }
-
-  dynamic getUserChoice() {
-    return _userChoice;
   }
 
   void hasBeenAnswered(){
@@ -38,17 +35,21 @@ abstract class Question {
       return _userChoice.toString() == _answer.toString() ? 1 : 0;
     }
   }
+
+  dynamic getUserChoice(){
+    return _userChoice;
+  }
 }
 
 class MultipleChoice extends Question{
-  MultipleChoice(super.stem, choices, super.answer) {
+  MultipleChoice(super.stem, choices, super.answer, {super.picture}) {
     _choices = choices;
     _range = choices.length;
   }
 }
 
 class FillInBlank extends Question {
-  FillInBlank(super.stem, super.answer){
+  FillInBlank(super.stem, super.answer, {super.picture}){
     _choices = "";
   }
 }

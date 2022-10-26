@@ -1,54 +1,41 @@
+import 'dart:convert';
+
 import 'package:quiz/main.dart';
 
-import 'APIHandler.dart';
-import 'Display.dart';
-import 'Exceptions.dart';
+import 'package:http/http.dart' as http;
 import 'Question.dart';
 
 class Quiz {
-  Future<List<Question>> _questions = Future(() => []);
 
-  Quiz() {
-    _startQuiz();
-  }
+  Quiz();
 
-  get questions => _questions;
+  Future<List<Question>> getQuestions(String username, String pin) async {
 
-  void _startQuiz() async {
-    _questions = APIHandler.getQuestions(LoginData().username, LoginData().pin);
-  }
-
-  dynamic verifyAnswer(dynamic prompt, Type requiredType, [int? questionRange]){
-    bool repeat = false;
-    String answer = "";
-    do{
-      try{
-        if (prompt.runtimeType == String){
-          print(prompt);
-        } else {
-          Display.displayQuestion(prompt);
-        }
-
-        if (answer.trim().isEmpty) {
-          throw NotANumberException('No response given');
-        } else if(requiredType == int &&  int.tryParse(answer) == null) {
-          throw NotANumberException('Not an integer');
-        }
-
-        if (questionRange != null && (int.parse(answer) > questionRange || int.parse(answer) < 1)) {
-          throw OutOfBoundsException('Number is not inside of the range');
-        }
-
-        if (requiredType == int) {
-          return int.parse(answer);
-        }
-
-        return answer;
-      } on NotANumberException catch (bug){
-        print('${bug.error}\n');
-      } on OutOfBoundsException catch (bug){
-        print('${bug.error}\n');
+    List<Question> questions = [];
+    for (int i = 1; i < 16; i++) {
+      String num;
+      if (i < 10) {
+        num = '0$i';
+      } else {
+        num = i.toString();
       }
-    } while(!repeat);
+      var url = Uri.parse('https://www.cs.utep.edu/cheon/cs4381/homework/quiz/get.php?user=$username&pin=$pin&quiz=quiz$num');
+      var response = await http.get(url);
+      var decoded = json.decode(response.body);
+      if (decoded['response'].toString() == 'true') {
+        decoded['quiz']['question'].forEach((element) {
+          if(element['type'].toString() == '1') {
+            element['figure'] == null ? questions.add(MultipleChoice(element['stem'], element['option'], element['answer'])) : questions.add(MultipleChoice(element['stem'], element['option'], element['answer'], picture: element['figure']));
+
+            if(element['figure'] != null){
+              print(element['stem']);
+            }
+          } else if (element['type'].toString() == '2') {
+            element['figure'] == null ? questions.add(FillInBlank(element['stem'], element['answer'][0])) : questions.add(FillInBlank(element['stem'], element['answer'][0], picture: element['figure']));
+          }
+        });
+      }
+    }
+    return questions;
   }
 }

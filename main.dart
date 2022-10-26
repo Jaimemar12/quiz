@@ -3,7 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:quiz/APIHandler.dart';
+import 'package:quiz/Quiz.dart';
 
 import 'Question.dart';
 
@@ -139,7 +139,7 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = APIHandler.getQuestions(widget.username, widget.pin);
+    _questions = Quiz().getQuestions(widget.username, widget.pin);
   }
 
   @override
@@ -204,29 +204,14 @@ class _QuizScreenState extends State<QuizScreen> {
                           mainAxisAlignment: MainAxisAlignment.start,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const SizedBox(
-                              width: 12,
-                            ),
-                            Text(
-                              "$counter/${widget.numberOfQuestions}",
-                              style: const TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(
-                              width: 90,
-                            ),
-                            const Text(
-                              "Question",
-                              style: TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(
-                              width: 90,
-                            ),
-                            const Text(
-                              "Question Type",
-                              style: TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.bold),
+                            SizedBox(
+                              width: 429,
+                              height: 10,
+                              child: LinearProgressIndicator(
+                                value: counter /
+                                    int.parse(widget.numberOfQuestions),
+                                semanticsLabel: 'Linear progress indicator',
+                              ),
                             ),
                           ],
                         ),
@@ -466,8 +451,14 @@ class _MultipleChoiceQuestionScreenState
               if (index == 0) {
                 return Column(
                   children: [
+                    widget.question.picture == null
+                        ? const SizedBox(
+                      height: 0,
+                    ) :
+                    Image.network(
+                      'https://www.cs.utep.edu/cheon/cs4381/homework/quiz/figure.php?name=${widget.question.picture}', scale: 2,),
                     Container(
-                        padding: const EdgeInsets.fromLTRB(50.0, 50, 50, 90),
+                        padding: const EdgeInsets.fromLTRB(50.0, 50, 50, 50),
                         child: Text(
                           widget.question.stem,
                           style: const TextStyle(fontSize: 25),
@@ -531,15 +522,21 @@ class _FillInBlankQuestionScreenState extends State<FillInBlankQuestionScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          widget.question.picture == null
+              ? const SizedBox(
+            height: 0,
+          ) :
+               Image.network(
+              'https://www.cs.utep.edu/cheon/cs4381/homework/quiz/figure.php?name=${widget.question.picture}', scale: 2,),
           Container(
               padding: const EdgeInsets.fromLTRB(50.0, 0, 50, 0),
               child: Text(
                 widget.question.stem,
-                style: const TextStyle(fontSize: 25),
+                style: const TextStyle(fontSize: 20),
                 textAlign: TextAlign.center,
               )),
           Container(
-            padding: const EdgeInsets.fromLTRB(100, 100, 100, 0),
+            padding: const EdgeInsets.fromLTRB(100, 30, 100, 50),
             child: Form(
                 key: _keyForm,
                 child: Column(children: [
@@ -573,6 +570,137 @@ class _FillInBlankQuestionScreenState extends State<FillInBlankQuestionScreen> {
   }
 }
 
+class MultipleChoiceQuestionReviewScreen extends StatefulWidget {
+  final Question question;
+  final String title;
+
+  const MultipleChoiceQuestionReviewScreen(this.question,
+      {required this.title, super.key});
+
+  @override
+  State<MultipleChoiceQuestionReviewScreen> createState() =>
+      _MultipleChoiceQuestionReviewScreenState();
+}
+
+class _MultipleChoiceQuestionReviewScreenState
+    extends State<MultipleChoiceQuestionReviewScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.title),
+        ),
+        body: ListView.builder(
+            itemCount: widget.question.choices.length,
+            itemBuilder: (_, index) {
+              if (index == 0) {
+                return Column(
+                  children: [
+                    widget.question.picture == null
+                        ? const SizedBox(
+                            height: 1,
+                          )
+                        : Image.network(
+                            'https://docs.flutter.dev/assets/images/dash/dash-fainting.gif'),
+                    Container(
+                        padding: const EdgeInsets.fromLTRB(50.0, 50, 50, 90),
+                        child: Text(
+                          widget.question.stem,
+                          style: const TextStyle(fontSize: 25),
+                          textAlign: TextAlign.center,
+                        )),
+                    ListTile(
+                      title: ElevatedButton(
+                          onPressed: null,
+                          child: Text(
+                            '${widget.question.choices[index]}',
+                            style: TextStyle(
+                                color:
+                                    getTextColor(widget.question, index + 1)),
+                          )),
+                    ),
+                  ],
+                );
+              }
+              return Column(
+                children: [
+                  ListTile(
+                    title: ElevatedButton(
+                        onPressed: null,
+                        child: Text(
+                          '${widget.question.choices[index]}',
+                          style: TextStyle(
+                              color: getTextColor(widget.question, index + 1)),
+                        )),
+                  ),
+                ],
+              );
+            }));
+  }
+
+  MaterialColor? getTextColor(Question question, int i) {
+    if (question.answer.toString() == i.toString()) {
+      return Colors.green;
+    }
+
+    if (i.toString() == question.getUserChoice().toString()) {
+      return Colors.red;
+    }
+    return null;
+  }
+}
+
+class FillInBlankQuestionReviewScreen extends StatefulWidget {
+  final Question question;
+  final String title;
+
+  const FillInBlankQuestionReviewScreen(this.question,
+      {required this.title, super.key});
+
+  @override
+  State<FillInBlankQuestionReviewScreen> createState() =>
+      _FillInBlankQuestionReviewScreenState();
+}
+
+class _FillInBlankQuestionReviewScreenState
+    extends State<FillInBlankQuestionReviewScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(50.0, 80, 50, 0),
+          child: Column(
+            children: [
+              Text(
+                widget.question.stem,
+                style: const TextStyle(fontSize: 20),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(
+                height: 100,
+              ),
+              Text(
+                'Correct Answer: ${widget.question.answer.toString()}',
+                style: const TextStyle(fontSize: 20),
+                textAlign: TextAlign.center,
+              ),
+              Text(
+                'User choice: ${widget.question.getUserChoice() == null ? 'No Response Given' : widget.question.getUserChoice().toString()}',
+                style: TextStyle(fontSize: 20, color: widget.question.getUserChoice().toString() == widget.question.answer.toString() ? Colors.green : Colors.red),
+                textAlign: TextAlign.center,
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class ReviewScreen extends StatefulWidget {
   final String title;
   final List<Question> questions;
@@ -597,14 +725,59 @@ class _ReviewScreenState extends State<ReviewScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        actions: [
+          PopupMenuButton(
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'Reset',
+                child: Text(
+                  'Reset',
+                ),
+              ),
+            ],
+            onSelected: (value) {
+              if (value == "Reset") {
+                runApp(MaterialApp(
+                  theme: ThemeData.dark(),
+                  debugShowCheckedModeBanner: false,
+                  home: const QuizApp(),
+                ));
+              }
+            },
+            icon: const Icon(Icons.menu),
+          )
+        ],
       ),
       body: Center(
-        child: ElevatedButton(
-          child: Text(getScore()),
-          onPressed: () {
-            Navigator.of(context).pop(true);
-          },
-        ),
+        child: ListView.builder(
+            itemCount: widget.questions.length,
+            itemBuilder: (_, index) {
+              return ListTile(
+                title: TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              widget.questions[index].runtimeType ==
+                                      MultipleChoice
+                                  ? MultipleChoiceQuestionReviewScreen(
+                                      widget.questions[index],
+                                      title: 'Question #${index + 1}',
+                                    )
+                                  : FillInBlankQuestionReviewScreen(
+                                      widget.questions[index],
+                                      title: 'Question #${index + 1}',
+                                    )),
+                    );
+                  },
+                  child: Text('#${index + 1} ${widget.questions[index].stem}'),
+                ),
+                leading: Icon(widget.questions[index].getScore() == 0
+                    ? Icons.close
+                    : Icons.check),
+              );
+            }),
       ),
     );
   }
