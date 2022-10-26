@@ -25,6 +25,7 @@ class QuizApp extends StatelessWidget {
   }
 }
 
+/// Home Screen of the Quiz App. User may select a valid number of questions to start the quiz
 class MainScreen extends StatefulWidget {
   final String username;
   final String pin;
@@ -118,6 +119,10 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
+/// Once the user selects the amount of questions to take, the user will receive the questions to be answered.
+/// On the left the user can see if the question has been answered or not. There is also a progress bar at the top
+/// to check their progress. The question is in the middle where the user may select it to answer. Once the question
+/// is answered it will be disabled and the checkmark will be added as it has been answered.
 class QuizScreen extends StatefulWidget {
   final String username;
   final String pin;
@@ -251,8 +256,6 @@ class _QuizScreenState extends State<QuizScreen> {
                           leading: Icon(questions[index].isAnswered
                               ? Icons.check_box
                               : Icons.check_box_outline_blank),
-                          trailing:
-                              Text(questions[index].runtimeType.toString()),
                         ),
                       ],
                     );
@@ -290,7 +293,6 @@ class _QuizScreenState extends State<QuizScreen> {
                       leading: Icon(questions[index].isAnswered
                           ? Icons.check_box
                           : Icons.check_box_outline_blank),
-                      trailing: Text(questions[index].runtimeType.toString()),
                     );
                   }
                 });
@@ -311,6 +313,8 @@ class LoginData {
   String pin = "";
 }
 
+/// Login Screen where user may enter their credentials.
+/// if username or password doesnt meet specific criteria will not be accepted
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key, required this.title}) : super(key: key);
   final String title;
@@ -425,6 +429,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+/// This Screen presents the question to the user where they can select from the
+/// given choices. If the question has a picture it will be added. Once they hit submit
+/// it will go back to previous page and mark it as answered.
 class MultipleChoiceQuestionScreen extends StatefulWidget {
   final Question question;
   final String title;
@@ -496,6 +503,9 @@ class _MultipleChoiceQuestionScreenState
   }
 }
 
+/// This Screen presents the question to the user where they can fill in their
+/// answer. If the question has a picture it will be added. Once they hit submit
+/// it will go back to previous page and mark it as answered.
 class FillInBlankQuestionScreen extends StatefulWidget {
   final Question question;
   final String title;
@@ -570,6 +580,9 @@ class _FillInBlankQuestionScreenState extends State<FillInBlankQuestionScreen> {
   }
 }
 
+/// Gives the user the review of all questions where the user can see the ones
+/// that got the correct and wrong questions. It will be color coded to let the
+/// user know the correct answer and the one they chose.
 class MultipleChoiceQuestionReviewScreen extends StatefulWidget {
   final Question question;
   final String title;
@@ -650,6 +663,9 @@ class _MultipleChoiceQuestionReviewScreenState
   }
 }
 
+/// Gives the user the review of all questions where the user can see the ones
+/// that got the correct and wrong questions. It will be color coded to let the
+/// user know the correct answer and the one they chose.
 class FillInBlankQuestionReviewScreen extends StatefulWidget {
   final Question question;
   final String title;
@@ -783,6 +799,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
   }
 }
 
+/// Small Help menu for the user to follow directions
 class HelpScreen extends StatefulWidget {
   final String title;
 
